@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cover VPN</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Onest:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --surface3: #22222e;
+    --accent: #6c5ce7;
+    --accent2: #a855f7;
+    --red: #e74c3c;
+    --green: #00b894;
+    --text: #f0f0f5;
+    --muted: #8888a0;
+    --border: rgba(255,255,255,0.07);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Onest', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ---- SCREENS ---- */
+  .screen { display: none; flex-direction: column; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ---- HEADER ---- */
+  .app-header {
+    padding: 16px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .lang-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: var(--text);
+    font-family: 'Onest', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ---- NAV ---- */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 0;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    transition: color 0.2s;
+    border: none;
+    background: none;
+    font-family: 'Onest', sans-serif;
+  }
+  .nav-item.active { color: var(--accent2); }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  /* ---- SCROLL CONTENT ---- */
+  .scroll-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ---- CARDS ---- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+  .card-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .card-sub { color: var(--muted); font-size: 13px; }
+
+  /* ---- HERO CARD ---- */
+  .hero-card {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -30%;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+  .hero-card::after {
+    content: '';
+    position: absolute;
+    bottom: -40%; left: -10%;
+    width: 150px; height: 150px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+  }
+  .hero-welcome {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    position: relative; z-index: 1;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    position: relative; z-index: 1;
+  }
+
+  /* ---- TRIAL CARD ---- */
+  .trial-card {
+    background: var(--surface2);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    text-align: center;
+  }
+  .trial-icon {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 16px;
+    margin: 0 auto 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+  }
+  .trial-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin: 16px 0;
+  }
+  .trial-stat { text-align: center; }
+  .trial-stat-num {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .trial-stat-label { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  /* ---- BUTTONS ---- */
+  .btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Onest', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+  }
+  .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-danger {
+    background: rgba(231, 76, 60, 0.15);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    color: var(--red);
+  }
+  .btn-green {
+    background: rgba(0, 184, 148, 0.15);
+    border: 1px solid rgba(0, 184, 148, 0.3);
+    color: var(--green);
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ---- PLAN CARDS ---- */
+  .plan-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .plan-card:active { transform: scale(0.99); }
+  .plan-card.selected {
+    border-color: var(--accent2);
+    background: rgba(168, 85, 247, 0.1);
+  }
+  .plan-left { flex: 1; }
+  .plan-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+  .plan-meta { color: var(--muted); font-size: 12px; display: flex; gap: 10px; }
+  .plan-price {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: right;
+  }
+  .plan-price-sub { color: var(--muted); font-size: 11px; text-align: right; }
+
+  /* ---- STATUS ---- */
+  .status-active {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,184,148,0.1);
+    border: 1px solid rgba(0,184,148,0.3);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--green);
+  }
+  .status-inactive {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(231,76,60,0.1);
+    border: 1px solid rgba(231,76,60,0.3);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--red);
+  }
+
+  /* ---- BALANCE ---- */
+  .balance-big {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 36px;
+    font-weight: 900;
+  }
+
+  /* ---- INPUT ---- */
+  .input-group { display: flex; gap: 10px; }
+  .input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Onest', sans-serif;
+    font-size: 15px;
+    outline: none;
+  }
+  .input::placeholder { color: var(--muted); }
+  .input:focus { border-color: var(--accent); }
+
+  /* ---- STATS ROW ---- */
+  .stats-row { display: flex; gap: 12px; }
+  .stat-box {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+  }
+  .stat-box-label { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+  .stat-box-value { font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 700; }
+  .stat-box-value.green { color: var(--green); }
+  .stat-box-value.purple { color: var(--accent2); }
+
+  /* ---- VLESS BLOCK ---- */
+  .vless-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--muted);
+    position: relative;
+  }
+  .vless-copy {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: white;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'Onest', sans-serif;
+  }
+
+  /* ---- SECTION HEADER ---- */
+  .section-header {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  /* ---- REFERRAL LINK ---- */
+  .ref-link-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    word-break: break-all;
+    margin-bottom: 10px;
+  }
+
+  /* ---- SUPPORT ---- */
+  .ticket-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+  }
+  .ticket-empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* ---- DIVIDER ---- */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  /* ---- LOADING ---- */
+  #loading {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+    z-index: 999;
+  }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid var(--surface3);
+    border-top-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- TOAST ---- */
+  #toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ---- PAY METHOD ---- */
+  .pay-method {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .pay-method:active { transform: scale(0.99); }
+  .pay-method-left { display: flex; align-items: center; gap: 12px; }
+  .pay-method-icon { font-size: 22px; }
+  .pay-method-name { font-weight: 600; font-size: 15px; }
+  .pay-method-sub { color: var(--muted); font-size: 12px; }
+
+  /* ---- ANIMATE IN ---- */
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-purple {
+    background: rgba(168,85,247,0.2);
+    color: var(--accent2);
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <div style="color: var(--muted); font-size: 14px;">Загрузка...</div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ===== HOME SCREEN ===== -->
+<div class="screen active" id="screen-home">
+  <div class="app-header">
+    <div class="logo">
+      <div class="logo-icon">🛡️</div>
+      <div class="logo-text">Cover VPN</div>
+    </div>
+    <button class="lang-btn">🇷🇺 RU</button>
+  </div>
+  <div class="scroll-content fade-in">
+    <div class="hero-card">
+      <div class="hero-welcome" id="hero-name">Добро пожаловать!</div>
+      <div style="margin-top:8px">
+        <span class="hero-badge" id="hero-badge">⭐ Базовый юзер</span>
+      </div>
+    </div>
+    <div id="trial-section"></div>
+    <div id="sub-status-section"></div>
+    <div id="vless-section"></div>
+  </div>
+</div>
+
+<!-- ===== SUBSCRIPTION SCREEN ===== -->
+<div class="screen" id="screen-sub">
+  <div class="app-header">
+    <div class="logo"><div class="logo-icon">📱</div><div class="logo-text">Подписка</div></div>
+    <button class="lang-btn">🇷🇺 RU</button>
+  </div>
+  <div class="scroll-content fade-in">
+    <div class="section-header">Тарифы</div>
+    <div id="sub-current-status"></div>
+    <div id="plans-list"></div>
+  </div>
+</div>
+
+<!-- ===== BALANCE SCREEN ===== -->
+<div class="screen" id="screen-balance">
+  <div class="app-header">
+    <div class="logo"><div class="logo-icon">💰</div><div class="logo-text">Баланс</div></div>
+    <button class="lang-btn">🇷🇺 RU</button>
+  </div>
+  <div class="scroll-content fade-in">
+    <div class="card">
+      <div class="card-sub">Текущий баланс</div>
+      <div class="balance-big" id="balance-amount">0.00 ₽</div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600; margin-bottom:12px">Промокод</div>
+      <div class="input-group">
+        <input class="input" id="promo-input" placeholder="Введите промокод">
+        <button class="btn btn-primary" style="width:auto; padding:14px 18px;" onclick="activatePromo()">Активировать</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600; margin-bottom:14px">Пополнение баланса</div>
+      <div style="display:flex; flex-direction:column; gap:10px">
+        <div class="pay-method" onclick="startTopup('sbp')">
+          <div class="pay-method-left">
+            <div class="pay-method-icon">🟣</div>
+            <div>
+              <div class="pay-method-name">СБП</div>
+              <div class="pay-method-sub">Оплата через Wata · 10–1 000 000 ₽</div>
+            </div>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--muted)"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="pay-method" onclick="startTopup('crypto')">
+          <div class="pay-method-left">
+            <div class="pay-method-icon">🟢</div>
+            <div>
+              <div class="pay-method-name">Криптовалюта — USDT</div>
+              <div class="pay-method-sub">Оплата через Heleket · 200–100 000 ₽</div>
+            </div>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--muted)"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="card" onclick="toggleHistory()" style="cursor:pointer">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-weight:600">История операций</div>
+        <svg id="history-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;transition:transform 0.2s"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div id="history-content" style="display:none; margin-top:12px; color:var(--muted); font-size:13px; text-align:center;">
+        Нет операций
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REFERRALS SCREEN ===== -->
+<div class="screen" id="screen-ref">
+  <div class="app-header">
+    <div class="logo"><div class="logo-icon">🤝</div><div class="logo-text">Партнёрка</div></div>
+    <button class="lang-btn">🇷🇺 RU</button>
+  </div>
+  <div class="scroll-content fade-in">
+    <div class="section-header">Реферальная программа</div>
+    <div class="card">
+      <div class="card-sub">Всего рефералов</div>
+      <div style="font-family:'Unbounded',sans-serif; font-size:32px; font-weight:900; margin:4px 0" id="ref-count">0</div>
+      <div style="color:var(--muted); font-size:12px" id="ref-active">0 активных</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-box-label">Общий заработок</div>
+        <div class="stat-box-value green" id="ref-earnings">+0.00 ₽</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Комиссия</div>
+        <div class="stat-box-value purple">40%</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600; margin-bottom:12px">Ваши реферальные ссылки</div>
+      <div style="color:var(--muted); font-size:12px; margin-bottom:6px">🔗 Ссылка на бота</div>
+      <div class="ref-link-block" id="ref-link-bot">Загрузка...</div>
+      <button class="btn btn-primary" onclick="copyRefLink('bot')" style="margin-bottom:12px">📋 Копировать</button>
+      <div style="color:var(--muted); font-size:12px; margin-bottom:6px">🔗 Ссылка на кабинет</div>
+      <div class="ref-link-block" id="ref-link-web">Загрузка...</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1" onclick="copyRefLink('web')">📋 Копировать</button>
+        <button class="btn btn-outline" style="flex:1" onclick="shareRefLink()">↑ Поделиться</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600; margin-bottom:12px">Условия программы</div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-box-label">Комиссия</div>
+          <div class="stat-box-value purple">40%</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">Мин. пополнение</div>
+          <div class="stat-box-value">100.00 ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600; margin-bottom:12px">Ваши рефералы</div>
+      <div id="ref-list" style="text-align:center; color:var(--muted); padding:20px 0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;margin:0 auto;display:block;opacity:0.3;margin-bottom:8px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Рефералов пока нет
+      </div>
+    </div>
+    <div style="color:var(--muted); font-size:12px; text-align:center; line-height:1.5; padding: 0 8px">
+      Поделитесь ссылкой с друзьями. Когда они зарегистрируются и оплатят, вы получите 40% комиссии!
+    </div>
+  </div>
+</div>
+
+<!-- ===== SUPPORT SCREEN ===== -->
+<div class="screen" id="screen-support">
+  <div class="app-header">
+    <div class="logo"><div class="logo-icon">💬</div><div class="logo-text">Поддержка</div></div>
+    <button class="lang-btn">🇷🇺 RU</button>
+  </div>
+  <div class="scroll-content fade-in">
+    <button class="btn btn-primary" onclick="newTicket()">+ Новый тикет</button>
+    <div class="card">
+      <div style="font-weight:600; margin-bottom:12px">Ваши обращения</div>
+      <div class="ticket-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <div>Нет обращений</div>
+      </div>
+    </div>
+    <div class="card" style="text-align:center; padding:30px 20px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;margin:0 auto;display:block;opacity:0.3;margin-bottom:12px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <div style="color:var(--muted); font-size:13px">Выберите обращение или создайте новое</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOTTOM NAV ===== -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="switchTab('home', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Главная
+  </button>
+  <button class="nav-item" onclick="switchTab('sub', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><path d="M9 21V9"/></svg>
+    Подписка
+  </button>
+  <button class="nav-item" onclick="switchTab('balance', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+    Баланс
+  </button>
+  <button class="nav-item" onclick="switchTab('ref', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Рефералы
+  </button>
+  <button class="nav-item" onclick="switchTab('support', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Поддержка
+  </button>
+</nav>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+  tg.setHeaderColor('#0a0a0f');
+  tg.setBackgroundColor('#0a0a0f');
+
+  const API = 'https://YOUR_DOMAIN.com/api'; // Replace with your domain
+  const initData = tg.initData || '';
+  const tgUser = tg.initDataUnsafe?.user || {};
+
+  let userData = null;
+
+  // ---- INIT ----
+  async function init() {
+    try {
+      const resp = await fetch(`${API}/user`, {
+        headers: { 'x-init-data': initData }
+      });
+      if (resp.ok) {
+        userData = await resp.json();
+        renderHome();
+        renderBalance();
+        renderReferrals();
+      } else {
+        // Fallback: show basic UI with Telegram user data
+        userData = {
+          user_id: tgUser.id,
+          first_name: tgUser.first_name || 'Пользователь',
+          balance: 0,
+          trial_used: false,
+          subscription: { active: false },
+          referrals_count: 0,
+          referral_earnings: 0,
+        };
+        renderHome();
+        renderBalance();
+        renderReferrals();
+      }
+    } catch(e) {
+      // Show UI even without backend
+      userData = {
+        first_name: tgUser.first_name || 'Пользователь',
+        balance: 0,
+        trial_used: false,
+        subscription: { active: false },
+        referrals_count: 0,
+        referral_earnings: 0,
+      };
+      renderHome();
+    }
+    document.getElementById('loading').style.display = 'none';
+    loadPlans();
+  }
+
+  // ---- RENDER HOME ----
+  function renderHome() {
+    if (!userData) return;
+    document.getElementById('hero-name').textContent = `Добро пожаловать, ${userData.first_name}!`;
+
+    const sub = userData.subscription;
+    const trialSection = document.getElementById('trial-section');
+    const subStatus = document.getElementById('sub-status-section');
+    const vlessSection = document.getElementById('vless-section');
+
+    if (!sub?.active && !userData.trial_used) {
+      trialSection.innerHTML = `
+        <div class="trial-card">
+          <div class="trial-icon">✨</div>
+          <div style="font-family:'Unbounded',sans-serif; font-size:18px; font-weight:700; margin-bottom:6px">Бесплатный пробный период</div>
+          <div style="color:var(--muted); font-size:13px; margin-bottom:16px">Попробуйте наш VPN бесплатно — без обязательств</div>
+          <div class="trial-stats">
+            <div class="trial-stat"><div class="trial-stat-num">1</div><div class="trial-stat-label">дней</div></div>
+            <div class="trial-stat"><div class="trial-stat-num">10</div><div class="trial-stat-label">ГБ</div></div>
+            <div class="trial-stat"><div class="trial-stat-num">1</div><div class="trial-stat-label">устройств</div></div>
+          </div>
+          <button class="btn btn-primary" onclick="activateTrial()">Активировать бесплатно</button>
+        </div>`;
+    }
+
+    if (sub?.active) {
+      subStatus.innerHTML = `
+        <div class="status-active">
+          ✅ ${sub.plan} · до ${sub.end_date}
+        </div>`;
+      document.getElementById('hero-badge').textContent = `⭐ ${sub.plan}`;
+
+      vlessSection.innerHTML = `
+        <div class="card">
+          <div style="font-weight:600; margin-bottom:10px">🔑 Ваш VLESS ключ</div>
+          <div class="vless-block" id="vless-text">Загрузка...</div>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="copyVless()">📋 Скопировать ключ</button>
+          <button class="btn btn-outline" style="margin-top:8px" onclick="openV2ray()">📱 Открыть в v2rayTun</button>
+        </div>`;
+      loadVlessLink();
+    } else {
+      subStatus.innerHTML = `
+        <div class="status-inactive">
+          ❌ Нет активной подписки
+        </div>`;
+    }
+  }
+
+  // ---- RENDER BALANCE ----
+  function renderBalance() {
+    if (!userData) return;
+    document.getElementById('balance-amount').textContent = `${(userData.balance || 0).toFixed(2)} ₽`;
+  }
+
+  // ---- RENDER REFERRALS ----
+  function renderReferrals() {
+    if (!userData) return;
+    document.getElementById('ref-count').textContent = userData.referrals_count || 0;
+    document.getElementById('ref-earnings').textContent = `+${(userData.referral_earnings || 0).toFixed(2)} ₽`;
+    const botName = 'CoverVPN_bot'; // Replace with your bot username
+    const userId = userData.user_id || '';
+    document.getElementById('ref-link-bot').textContent = `https://t.me/${botName}?start=ref${userId}`;
+    document.getElementById('ref-link-web').textContent = `https://cabinet.coverprotect.info/login?ref=${userId}`;
+  }
+
+  // ---- LOAD PLANS ----
+  async function loadPlans() {
+    const container = document.getElementById('plans-list');
+    const statusEl = document.getElementById('sub-current-status');
+
+    if (userData?.subscription?.active) {
+      statusEl.innerHTML = `<div class="status-active">✅ ${userData.subscription.plan} · до ${userData.subscription.end_date}</div>`;
+    } else {
+      statusEl.innerHTML = `<div class="status-inactive">❌ Нет активной подписки</div>`;
+    }
+
+    const plans = {
+      day:   { name: '☀️ Суточный',  days: 1,   price: 19,   traffic: '10 ГБ',  devices: 1 },
+      week:  { name: '📅 Недельный', days: 7,   price: 99,   traffic: '50 ГБ',  devices: 1 },
+      month: { name: '📆 Месячный',  days: 30,  price: 299,  traffic: '200 ГБ', devices: 2 },
+      year:  { name: '🗓 Годовой',   days: 365, price: 1990, traffic: '∞',       devices: 3 },
+    };
+
+    let html = '';
+    const popular = 'month';
+    for (const [key, plan] of Object.entries(plans)) {
+      const isPopular = key === popular;
+      html += `
+        <div class="plan-card${isPopular ? ' selected' : ''}" onclick="selectPlan('${key}', ${plan.price})" style="position:relative">
+          ${isPopular ? '<div style="position:absolute;top:-1px;right:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-size:10px;font-weight:700;padding:3px 10px;border-radius:0 0 8px 8px;letter-spacing:0.5px">ПОПУЛЯРНОЕ</div>' : ''}
+          <div class="plan-left">
+            <div class="plan-name">${plan.name}</div>
+            <div class="plan-meta">
+              <span>⏱ ${plan.days > 1 ? plan.days + ' дн.' : '1 день'}</span>
+              <span>📊 ${plan.traffic}</span>
+              <span>📱 ${plan.devices} уст.</span>
+            </div>
+          </div>
+          <div>
+            <div class="plan-price">${plan.price}₽</div>
+            <div class="plan-price-sub">/период</div>
+          </div>
+        </div>`;
+    }
+    container.innerHTML = html;
+  }
+
+  // ---- LOAD VLESS LINK ----
+  async function loadVlessLink() {
+    try {
+      const resp = await fetch(`${API}/vless`, { headers: { 'x-init-data': initData } });
+      if (resp.ok) {
+        const data = await resp.json();
+        const el = document.getElementById('vless-text');
+        if (el) el.textContent = data.vless_link || 'Ключ недоступен';
+        window._vlessLink = data.vless_link;
+      }
+    } catch(e) {}
+  }
+
+  // ---- ACTIONS ----
+  async function activateTrial() {
+    showToast('⏳ Активируем...');
+    try {
+      const resp = await fetch(`${API}/trial/activate`, {
+        method: 'POST',
+        headers: { 'x-init-data': initData }
+      });
+      const data = await resp.json();
+      if (data.success) {
+        showToast('✅ Пробный период активирован!');
+        userData.trial_used = true;
+        userData.subscription = { active: true, plan: '🎁 Пробный', end_date: '+1 день' };
+        window._vlessLink = data.vless_link;
+        renderHome();
+      } else {
+        showToast('❌ ' + (data.error || 'Ошибка'));
+      }
+    } catch(e) {
+      showToast('❌ Ошибка соединения');
+    }
+  }
+
+  function selectPlan(planKey, price) {
+    const balance = userData?.balance || 0;
+    if (balance >= price) {
+      tg.showConfirm(`Купить тариф за ${price}₽?\nСпишется с баланса.`, async (ok) => {
+        if (ok) {
+          showToast('⏳ Активируем...');
+          const resp = await fetch(`${API}/subscription/activate`, {
+            method: 'POST',
+            headers: { 'x-init-data': initData, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan: planKey })
+          });
+          const data = await resp.json();
+          if (data.success) {
+            showToast('✅ Подписка активирована!');
+            window._vlessLink = data.vless_link;
+            await refreshUser();
+          } else {
+            showToast('❌ ' + (data.error || 'Ошибка'));
+          }
+        }
+      });
+    } else {
+      const needed = price - balance;
+      tg.showConfirm(`Недостаточно средств.\nНужно ещё ${needed.toFixed(0)}₽.\n\nПерейти к оплате?`, (ok) => {
+        if (ok) {
+          openPayment(planKey, price);
+        }
+      });
+    }
+  }
+
+  async function openPayment(plan, amount) {
+    showToast('⏳ Создаём платёж...');
+    try {
+      const resp = await fetch(`${API}/payment/create`, {
+        method: 'POST',
+        headers: { 'x-init-data': initData, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, amount })
+      });
+      const data = await resp.json();
+      if (data.payment_url) {
+        tg.openLink(data.payment_url);
+      } else {
+        showToast('❌ Ошибка создания платежа');
+      }
+    } catch(e) {
+      showToast('❌ Ошибка соединения');
+    }
+  }
+
+  function startTopup(method) {
+    tg.showPopup({
+      title: 'Сумма пополнения',
+      message: 'Введите сумму в рублях',
+      buttons: [
+        { id: '300', type: 'default', text: '300 ₽' },
+        { id: '500', type: 'default', text: '500 ₽' },
+        { id: '1000', type: 'default', text: '1 000 ₽' },
+        { id: 'cancel', type: 'cancel', text: 'Отмена' },
+      ]
+    }, (btnId) => {
+      if (btnId && btnId !== 'cancel') {
+        openPayment('topup', parseInt(btnId));
+      }
+    });
+  }
+
+  function activatePromo() {
+    const code = document.getElementById('promo-input').value.trim();
+    if (!code) { showToast('Введите промокод'); return; }
+    showToast('⏳ Проверяем промокод...');
+    // TODO: API call
+  }
+
+  function copyVless() {
+    const link = window._vlessLink || document.getElementById('vless-text')?.textContent;
+    if (link && link !== 'Загрузка...') {
+      navigator.clipboard.writeText(link).then(() => showToast('✅ Ключ скопирован!'));
+    }
+  }
+
+  function openV2ray() {
+    const link = window._vlessLink;
+    if (link) {
+      tg.openLink(`v2raytun://import/${encodeURIComponent(link)}`);
+    } else {
+      showToast('Ключ недоступен');
+    }
+  }
+
+  function copyRefLink(type) {
+    const el = document.getElementById(`ref-link-${type}`);
+    if (el) {
+      navigator.clipboard.writeText(el.textContent).then(() => showToast('✅ Ссылка скопирована!'));
+    }
+  }
+
+  function shareRefLink() {
+    const link = document.getElementById('ref-link-bot')?.textContent;
+    if (link) tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=VPN без ограничений!`);
+  }
+
+  function newTicket() {
+    tg.showAlert('Для создания тикета напишите в @your_support_bot или воспользуйтесь меню в боте.');
+  }
+
+  function toggleHistory() {
+    const content = document.getElementById('history-content');
+    const arrow = document.getElementById('history-arrow');
+    if (content.style.display === 'none') {
+      content.style.display = 'block';
+      arrow.style.transform = 'rotate(180deg)';
+    } else {
+      content.style.display = 'none';
+      arrow.style.transform = '';
+    }
+  }
+
+  async function refreshUser() {
+    try {
+      const resp = await fetch(`${API}/user`, { headers: { 'x-init-data': initData } });
+      if (resp.ok) {
+        userData = await resp.json();
+        renderHome();
+        renderBalance();
+        renderReferrals();
+      }
+    } catch(e) {}
+  }
+
+  // ---- TAB SWITCH ----
+  function switchTab(name, btn) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(`screen-${name}`).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ---- TOAST ----
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  // ---- START ----
+  init();
+</script>
+</body>
+</html>
