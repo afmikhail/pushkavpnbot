@@ -271,6 +271,7 @@ async function apiCall(path, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
     'x-init-data': initData,
+    'bypass-tunnel-reminder': 'true',
     ...( options.headers || {} ),
   };
   const resp = await fetch(API_BASE + path, { ...options, headers });
