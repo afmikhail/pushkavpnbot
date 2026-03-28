@@ -163,28 +163,7 @@
       <div style="margin-top:10px;margin-bottom:12px">
         <input class="input" id="custom-amount" type="number" placeholder="Своя сумма" oninput="selectAmount(this.value,null,true)">
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div class="pay-method" onclick="topup('sbp')">
-          <div class="pay-method-left">
-            <span style="font-size:20px">🟣</span>
-            <div>
-              <div class="pay-method-name">СБП</div>
-              <div class="pay-method-sub">Через Wata · от 10₽</div>
-            </div>
-          </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--muted)"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-        <div class="pay-method" onclick="topup('crypto')">
-          <div class="pay-method-left">
-            <span style="font-size:20px">🟢</span>
-            <div>
-              <div class="pay-method-name">USDT</div>
-              <div class="pay-method-sub">Через Heleket · от 200₽</div>
-            </div>
-          </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--muted)"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-      </div>
+      <button class="btn btn-primary" style="margin-top:4px" onclick="topup()">💳 Оплатить через ЮKassa</button>
     </div>
   </div>
 </div>
@@ -381,24 +360,7 @@ async function buyPlan(planKey, price) {
       }
     });
   } else {
-    const needed = price - balance;
-    tg.showConfirm(`Недостаточно средств.\nНужно ещё ${needed.toFixed(0)}₽.\n\nОплатить онлайн?`, async (ok) => {
-      if (!ok) return;
-      showToast('Создаём платёж...');
-      try {
-        const res = await apiCall('/api/payment/create', {
-          method: 'POST',
-          body: JSON.stringify({ amount: price, plan: planKey }),
-        });
-        if (res.payment_url) {
-          tg.openLink(res.payment_url);
-        } else {
-          tg.showAlert('❌ Ошибка создания платежа');
-        }
-      } catch (e) {
-        tg.showAlert('❌ ' + e.message);
-      }
-    });
+    openInvoice({ plan: planKey });
   }
 }
 
@@ -411,28 +373,38 @@ function selectAmount(val, btn, custom = false) {
   }
 }
 
-async function topup(method) {
+async function topup() {
   if (!selectedAmount || selectedAmount < 10) {
     showToast('Минимальная сумма — 10₽');
     return;
   }
-  tg.showConfirm(`Пополнить на ${selectedAmount}₽?`, async (ok) => {
-    if (!ok) return;
-    showToast('Создаём платёж...');
-    try {
-      const res = await apiCall('/api/payment/create', {
-        method: 'POST',
-        body: JSON.stringify({ amount: selectedAmount, plan: 'topup', method }),
-      });
-      if (res.payment_url) {
-        tg.openLink(res.payment_url);
-      } else {
-        tg.showAlert('❌ Ошибка создания платежа');
-      }
-    } catch (e) {
-      tg.showAlert('❌ ' + e.message);
+  openInvoice({ plan: 'topup', amount: selectedAmount });
+}
+
+async function openInvoice({ plan, amount }) {
+  showToast('Создаём счёт...');
+  try {
+    const body = { plan };
+    if (amount) body.amount = amount;
+    const res = await apiCall('/api/payment/invoice', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    if (!res.invoice_link) {
+      tg.showAlert('❌ Ошибка создания счёта');
+      return;
     }
-  });
+    tg.openInvoice(res.invoice_link, async (status) => {
+      if (status === 'paid') {
+        showToast('✅ Оплата прошла!');
+        await loadData();
+      } else if (status === 'cancelled') {
+        showToast('Оплата отменена');
+      }
+    });
+  } catch (e) {
+    tg.showAlert('❌ ' + e.message);
+  }
 }
 
 function copyVless() {
