@@ -289,7 +289,10 @@ function renderAll() {
         <div style="font-weight:600;margin-bottom:10px">🔑 Ваш VLESS ключ</div>
         <div class="vless-block">${userData.vless_link}</div>
         <button class="btn btn-primary" style="margin-bottom:8px" onclick="copyVless()">📋 Скопировать ключ</button>
-        <button class="btn btn-outline" onclick="openV2ray()">📱 Открыть в v2rayTun</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline" style="flex:1" onclick="openV2ray()">v2rayTun</button>
+          <button class="btn btn-outline" style="flex:1" onclick="openHapp()">Happ</button>
+        </div>
       </div>`;
   } else {
     vlessEl.innerHTML = '';
@@ -413,7 +416,11 @@ function copyVless() {
 }
 
 function openV2ray() {
-  if (userData?.vless_link) tg.openLink(`v2raytun://import/${encodeURIComponent(userData.vless_link)}`);
+  if (userData?.vless_link) window.location.href = `v2raytun://import/${encodeURIComponent(userData.vless_link)}`;
+}
+
+function openHapp() {
+  if (userData?.vless_link) window.location.href = `happ://add/${encodeURIComponent(userData.vless_link)}`;
 }
 
 function openSupport() {
