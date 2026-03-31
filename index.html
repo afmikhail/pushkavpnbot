@@ -415,12 +415,21 @@ function copyVless() {
   if (link) navigator.clipboard.writeText(link).then(() => showToast('✅ Ключ скопирован!'));
 }
 
+function openDeepLink(url) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => document.body.removeChild(a), 500);
+}
+
 function openV2ray() {
-  if (userData?.vless_link) window.location.href = `v2raytun://import/${encodeURIComponent(userData.vless_link)}`;
+  if (userData?.vless_link) openDeepLink(`v2raytun://import/${encodeURIComponent(userData.vless_link)}`);
 }
 
 function openHapp() {
-  if (userData?.vless_link) window.location.href = `happ://add/${encodeURIComponent(userData.vless_link)}`;
+  if (userData?.vless_link) openDeepLink(`happ://add/${encodeURIComponent(userData.vless_link)}`);
 }
 
 function openSupport() {
