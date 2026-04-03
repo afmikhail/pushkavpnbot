@@ -15,16 +15,28 @@
     --radius:14px; --radius-sm:10px;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
   body{
     font-family:'Onest',sans-serif;
-    background:var(--bg);
+    background:#000;
     color:var(--text);
-    min-height:100vh;
     overflow-x:hidden;
+    display:flex;
+    justify-content:center;
+  }
+  #app{
+    width:100%;
+    max-width:480px;
+    background:var(--bg);
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    min-height:100vh;
+    position:relative;
     padding-top:env(safe-area-inset-top);
     padding-bottom:env(safe-area-inset-bottom);
   }
-  .screen{display:none;flex-direction:column;height:100vh}
+  .screen{display:none;flex-direction:column;flex:1;overflow:hidden}
   .screen.active{display:flex}
   .app-header{
     padding:12px 16px 10px;
@@ -86,7 +98,7 @@
   .pay-method-name{font-weight:600;font-size:14px}
   .pay-method-sub{color:var(--muted);font-size:11px}
   .section-header{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:700}
-  #loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:999}
+  #loading{position:absolute;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:999}
   #loading-text{color:var(--muted);font-size:13px}
   .spinner{width:36px;height:36px;border:3px solid var(--surface3);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -102,6 +114,7 @@
 </style>
 </head>
 <body>
+<div id="app">
 
 <div id="loading">
   <div class="spinner"></div>
@@ -459,5 +472,6 @@ function showToast(msg) {
 
 window.addEventListener('load', loadData);
 </script>
+</div><!-- #app -->
 </body>
 </html>
