@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PushkaVPN</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Onest:wght@300;400;500;600&display=swap');
   :root {
@@ -99,8 +100,7 @@
   .section-header{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:700}
   #loading{position:absolute;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:999}
   #loading-text{color:var(--muted);font-size:13px}
-  .spinner{width:36px;height:36px;border:3px solid var(--surface3);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
+  #lottie-loader{width:120px;height:120px}
   #toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface3);border:1px solid var(--border);border-radius:20px;padding:8px 18px;font-size:13px;font-weight:500;z-index:200;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap}
   #toast.show{opacity:1}
   .fade-in{animation:fadeIn 0.2s ease}
@@ -116,7 +116,7 @@
 <div id="app">
 
 <div id="loading">
-  <div class="spinner"></div>
+  <div id="lottie-loader"></div>
   <div id="loading-text">Загрузка...</div>
 </div>
 
@@ -469,7 +469,16 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
 }
 
-window.addEventListener('load', loadData);
+window.addEventListener('load', () => {
+  lottie.loadAnimation({
+    container: document.getElementById('lottie-loader'),
+    renderer: 'svg',
+    loop: true,
+    autoplay: true,
+    path: 'Connect.json',
+  });
+  loadData();
+});
 </script>
 </div><!-- #app -->
 </body>
