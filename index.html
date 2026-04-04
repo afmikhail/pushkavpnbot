@@ -289,7 +289,11 @@ function renderAll() {
 
   const subEl = document.getElementById('sub-status-section');
   if (sub.active) {
-    subEl.innerHTML = `<div class="status-active">✅ ${sub.plan} · до ${sub.end_date} (${sub.days_left} дн.)</div>`;
+    const trafficLine = sub.traffic ? `<div style="color:var(--muted);font-size:11px;margin-top:4px">📊 Трафик: ${sub.traffic}</div>` : '';
+    subEl.innerHTML = `<div class="status-active" style="flex-direction:column;align-items:flex-start">
+      <span>✅ ${sub.plan} · до ${sub.end_date} (${sub.days_left} дн.)</span>
+      ${trafficLine}
+    </div>`;
   } else {
     subEl.innerHTML = `<div class="status-inactive">❌ Нет активной подписки</div>`;
   }
@@ -428,24 +432,25 @@ function copyVless() {
 }
 
 function openDeepLink(url) {
-  const a = document.createElement('a');
-  a.href = url;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => document.body.removeChild(a), 500);
+  try {
+    window.location.href = url;
+  } catch(e) {
+    window.open(url, '_blank');
+  }
 }
 
 function openV2ray() {
-  if (userData?.vless_link) openDeepLink(`v2raytun://import/${encodeURIComponent(userData.vless_link)}`);
+  if (!userData?.vless_link) { showToast('Нет ключа'); return; }
+  openDeepLink('v2raytun://import/' + encodeURIComponent(userData.vless_link));
 }
 
 function openHapp() {
-  if (userData?.vless_link) openDeepLink(`happ://add/${encodeURIComponent(userData.vless_link)}`);
+  if (!userData?.vless_link) { showToast('Нет ключа'); return; }
+  openDeepLink('happ://add/' + encodeURIComponent(userData.vless_link));
 }
 
 function openSupport() {
-  tg.openLink('https://t.me/pushka_support');
+  tg.openLink('https://t.me/VpnPushka');
 }
 
 async function refreshData() {
