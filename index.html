@@ -334,6 +334,13 @@ function renderAll() {
     </div>
     <div><div class="plan-price">250₽</div><div class="plan-price-sub">/месяц</div></div>
   </div>`;
+  plansHtml += `<div class="plan-card" onclick="buyPlan('year',2490)">
+    <div style="flex:1">
+      <div class="plan-name">📅 Годовой</div>
+      <div class="plan-meta"><span>⏱ 365 дней</span><span>📊 ∞ ГБ</span><span>📱 2 уст.</span></div>
+    </div>
+    <div><div class="plan-price">2490₽</div><div class="plan-price-sub">/год</div></div>
+  </div>`;
   document.getElementById('plans-list').innerHTML = plansHtml;
 
   document.getElementById('balance-amount').textContent = `${parseFloat(userData.balance || 0).toFixed(2)} ₽`;
