@@ -46,7 +46,8 @@
     flex-shrink:0;
   }
   .logo{display:flex;align-items:center;gap:10px}
-  .logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .logo-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden}
+  .logo-icon img{width:100%;height:100%;object-fit:cover;border-radius:8px}
   .logo-text{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700}
   .refresh-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Onest',sans-serif}
   .bottom-nav{
@@ -125,7 +126,7 @@
 <!-- HOME -->
 <div class="screen active" id="screen-home">
   <div class="app-header">
-    <div class="logo"><div class="logo-icon">🚀</div><div class="logo-text">PushkaVPN</div></div>
+    <div class="logo"><div class="logo-icon"><img src="logo.png" alt="PushkaVPN"></div><div class="logo-text">PushkaVPN</div></div>
     <button class="refresh-btn" onclick="refreshData()">↻ Обновить</button>
   </div>
   <div class="scroll-content fade-in">
