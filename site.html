@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PushkaVPN — Интернет без границ</title>
+  <meta name="description" content="Быстрый VPN для обхода блокировок. YouTube, Instagram, любые сайты без ограничений.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <style>
+    :root {
+      --bg: #000;
+      --bg2: #080808;
+      --surface: rgba(255,255,255,0.04);
+      --surface2: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.09);
+      --border2: rgba(255,255,255,0.16);
+      --text: #f5f5f7;
+      --muted: #86868b;
+      --muted2: #48484a;
+      --accent: #0071e3;
+      --accent2: #7c3aed;
+      --green: #30d158;
+      --red: #ff453a;
+      --grad: linear-gradient(135deg, #0071e3 0%, #7c3aed 100%);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* ── LOADING ── */
+    #loading-screen {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+    #loading-screen.out { opacity: 0; pointer-events: none; }
+    #lottie-loader { width: 110px; height: 110px; }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 max(40px, 5vw);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      background: rgba(0,0,0,0.72);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { width: 30px; height: 30px; border-radius: 7px; }
+    .nav-logo-text { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 9px 20px;
+      border-radius: 980px;
+      font-size: 14px; font-weight: 500; font-family: inherit;
+      cursor: pointer; border: none; outline: none;
+      transition: all 0.2s ease; text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--grad); color: #fff; }
+    .btn-primary:hover { opacity: 0.82; transform: scale(1.02); }
+    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: rgba(255,255,255,0.13); }
+    .btn-lg { padding: 15px 32px; font-size: 16px; border-radius: 14px; }
+    .btn-full { width: 100%; border-radius: 12px; padding: 14px; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 110px 40px 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero-orb1 {
+      position: absolute; top: -150px; left: 50%;
+      transform: translateX(-55%);
+      width: 900px; height: 900px;
+      background: radial-gradient(circle, rgba(0,113,227,0.13) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero-orb2 {
+      position: absolute; bottom: -200px; right: -100px;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(124,58,237,0.1) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 14px; border-radius: 980px;
+      background: rgba(0,113,227,0.1);
+      border: 1px solid rgba(0,113,227,0.22);
+      font-size: 12px; font-weight: 600; color: #60aff5;
+      letter-spacing: 0.02em;
+      margin-bottom: 28px;
+      animation: fadeUp 0.7s ease both;
+    }
+    .hero-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+    .hero-title {
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: 800;
+      letter-spacing: -3px;
+      line-height: 1.02;
+      margin-bottom: 22px;
+      animation: fadeUp 0.7s ease 0.08s both;
+    }
+    .grad-text {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 20px);
+      color: var(--muted);
+      max-width: 520px;
+      margin-bottom: 40px;
+      font-weight: 400;
+      animation: fadeUp 0.7s ease 0.16s both;
+    }
+    .hero-cta {
+      display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp 0.7s ease 0.24s both;
+      margin-bottom: 64px;
+    }
+    #hero-lottie {
+      width: 240px; height: 240px;
+      animation: fadeUp 0.7s ease 0.32s both;
+      filter: drop-shadow(0 0 48px rgba(0,113,227,0.28));
+    }
+
+    /* ── SECTIONS ── */
+    .section { padding: 100px max(40px,5vw); }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-label {
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: #60aff5; margin-bottom: 14px;
+    }
+    .section-title {
+      font-size: clamp(34px, 4.5vw, 56px);
+      font-weight: 800; letter-spacing: -1.5px;
+      line-height: 1.07; margin-bottom: 14px;
+    }
+    .section-sub {
+      font-size: 17px; color: var(--muted);
+      max-width: 500px; margin-bottom: 56px;
+    }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 30px;
+      transition: all 0.3s ease;
+    }
+    .feature-card:hover {
+      background: var(--surface2);
+      border-color: var(--border2);
+      transform: translateY(-4px);
+      box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+    }
+    .feature-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 18px;
+      background: rgba(0,113,227,0.1);
+      border: 1px solid rgba(0,113,227,0.18);
+    }
+    .feature-name { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+    .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+    /* ── PRICING ── */
+    .pricing-bg { background: var(--bg2); }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 22px; max-width: 800px;
+    }
+    .pricing-grid.center { margin: 0 auto; }
+    .plan-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px; padding: 36px;
+      position: relative; cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .plan-card:hover { transform: translateY(-5px); box-shadow: 0 32px 64px rgba(0,0,0,0.5); }
+    .plan-card.featured {
+      background: linear-gradient(135deg, rgba(0,113,227,0.1), rgba(124,58,237,0.07));
+      border-color: rgba(0,113,227,0.35);
+    }
+    .plan-badge {
+      position: absolute; top: -12px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--grad); color: #fff;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 980px;
+    }
+    .plan-name { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .plan-price {
+      font-size: 56px; font-weight: 800;
+      letter-spacing: -2.5px; line-height: 1;
+      margin-bottom: 4px;
+    }
+    .plan-price sub { font-size: 20px; font-weight: 500; color: var(--muted); vertical-align: baseline; letter-spacing: 0; }
+    .plan-period { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+    .plan-feats { list-style: none; margin-bottom: 32px; }
+    .plan-feats li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--muted);
+    }
+    .plan-feats li:last-child { border: none; }
+    .plan-feats li .ck { color: var(--green); font-size: 13px; flex-shrink: 0; }
+
+    /* ── LOGIN ── */
+    .login-section { text-align: center; }
+    .login-card {
+      max-width: 420px; margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px; padding: 48px 36px;
+    }
+    .login-card h2 {
+      font-size: 26px; font-weight: 700;
+      letter-spacing: -0.5px; margin-bottom: 10px;
+    }
+    .login-card p { color: var(--muted); font-size: 14px; line-height: 1.65; margin-bottom: 28px; }
+    .tg-widget-wrap { display: flex; justify-content: center; min-height: 56px; }
+
+    /* ── DASHBOARD ── */
+    #dashboard {
+      min-height: 100vh;
+      padding: 80px max(20px,4vw) 60px;
+      max-width: 700px; margin: 0 auto;
+    }
+    .dash-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 36px;
+    }
+    .dash-user { display: flex; align-items: center; gap: 14px; }
+    .dash-avatar {
+      width: 50px; height: 50px; border-radius: 50%;
+      background: var(--grad);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 21px; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .dash-name { font-size: 19px; font-weight: 700; }
+    .dash-handle { font-size: 13px; color: var(--muted); }
+
+    .d-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 22px 24px;
+      margin-bottom: 14px;
+    }
+    .d-card-label {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted2); margin-bottom: 14px;
+    }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 980px;
+      font-size: 13px; font-weight: 600;
+    }
+    .status-on { background: rgba(48,209,88,0.1); color: var(--green); border: 1px solid rgba(48,209,88,0.22); }
+    .status-off { background: rgba(255,69,58,0.1); color: var(--red); border: 1px solid rgba(255,69,58,0.2); }
+
+    .sub-details { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    .key-box {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 11px; color: var(--muted);
+      word-break: break-all; line-height: 1.6;
+      margin: 14px 0;
+      max-height: 80px; overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .key-box:hover { border-color: var(--border2); }
+
+    .key-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .key-btn {
+      flex: 1; min-width: 90px; padding: 10px 12px;
+      border-radius: 10px; font-size: 13px; font-weight: 500;
+      font-family: inherit; cursor: pointer; border: none; transition: all 0.2s;
+    }
+    .kb-copy { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .kb-copy:hover { background: rgba(255,255,255,0.14); }
+    .kb-v2ray { background: rgba(0,113,227,0.12); color: #60aff5; border: 1px solid rgba(0,113,227,0.25); }
+    .kb-v2ray:hover { background: rgba(0,113,227,0.22); }
+    .kb-happ { background: rgba(124,58,237,0.12); color: #c4b5fd; border: 1px solid rgba(124,58,237,0.25); }
+    .kb-happ:hover { background: rgba(124,58,237,0.22); }
+
+    .trial-card {
+      text-align: center;
+      border-color: rgba(48,209,88,0.25) !important;
+      background: rgba(48,209,88,0.03) !important;
+    }
+    .trial-card .emoji { font-size: 36px; margin-bottom: 10px; }
+    .trial-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+    .trial-card p { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+
+    .d-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .d-plan {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .d-plan:hover { border-color: rgba(0,113,227,0.45); background: rgba(0,113,227,0.06); }
+    .d-plan.feat-plan {
+      border-color: rgba(0,113,227,0.3);
+      background: linear-gradient(135deg, rgba(0,113,227,0.07), rgba(124,58,237,0.05));
+    }
+    .dp-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .dp-price { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+    .dp-price span { font-size: 12px; font-weight: 400; color: var(--muted); }
+    .dp-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* ── DIVIDER ── */
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 36px 40px; text-align: center;
+      color: var(--muted2); font-size: 13px;
+    }
+    footer a { color: var(--muted); text-decoration: none; margin: 0 10px; }
+    footer a:hover { color: var(--text); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(72px);
+      background: rgba(22,22,24,0.95);
+      backdrop-filter: blur(20px);
+      color: var(--text); padding: 12px 22px;
+      border-radius: 980px; font-size: 14px; font-weight: 500;
+      border: 1px solid var(--border2); z-index: 9998;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+    .fiu { opacity: 0; transform: translateY(22px); transition: opacity 0.65s ease, transform 0.65s ease; }
+    .fiu.vis { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .nav { padding: 0 20px; }
+      .hero { padding: 90px 20px 60px; }
+      .section { padding: 70px 20px; }
+      .login-card { padding: 36px 24px; }
+      #hero-lottie { width: 180px; height: 180px; }
+      .d-plans { grid-template-columns: 1fr; }
+      #dashboard { padding: 70px 16px 50px; }
+      .hero-title { letter-spacing: -2px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div id="lottie-loader"></div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="#" class="nav-logo" onclick="goHome()">
+    <img src="logo.png" alt="PushkaVPN">
+    <span class="nav-logo-text">PushkaVPN</span>
+  </a>
+  <div class="nav-right">
+    <button class="btn btn-ghost" id="btn-login-nav" onclick="scrollToLogin()">Войти</button>
+    <button class="btn btn-ghost" id="btn-logout-nav" style="display:none" onclick="logout()">Выйти</button>
+  </div>
+</nav>
+
+<!-- ══════════════════ LANDING ══════════════════ -->
+<div id="landing" style="display:none">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-orb1"></div>
+    <div class="hero-orb2"></div>
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      Работает в России · МТС, Билайн, МегаФон
+    </div>
+    <h1 class="hero-title">Интернет<br><span class="grad-text">без границ</span></h1>
+    <p class="hero-sub">Быстрый VPN для обхода блокировок. YouTube, Instagram, любые сайты — без ограничений и слежки.</p>
+    <div class="hero-cta">
+      <button class="btn btn-primary btn-lg" onclick="scrollToPricing()">Начать бесплатно</button>
+      <button class="btn btn-ghost btn-lg" onclick="scrollToLogin()">Войти</button>
+    </div>
+    <div id="hero-lottie"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- FEATURES -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="section-label">Возможности</div>
+      <h2 class="section-title fiu">Создан для<br>реального интернета</h2>
+      <p class="section-sub fiu">Протокол VLESS + Reality — невидим для провайдеров и DPI-систем.</p>
+      <div class="features-grid">
+        <div class="feature-card fiu">
+          <div class="feature-icon">🛡️</div>
+          <div class="feature-name">Обход любых блокировок</div>
+          <div class="feature-desc">Работает на МТС, Билайн, МегаФон, Ростелеком. YouTube, Instagram, X — без ограничений.</div>
+        </div>
+        <div class="feature-card fiu">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-name">Скорость до 1 Гбит/с</div>
+          <div class="feature-desc">Серверы в Европе на выделенных каналах. 4K YouTube и стриминг без буферизации.</div>
+        </div>
+        <div class="feature-card fiu">
+          <div class="feature-icon">🔐</div>
+          <div class="feature-name">Полная приватность</div>
+          <div class="feature-desc">Трафик зашифрован и неотличим от обычного HTTPS. Никаких логов подключений.</div>
+        </div>
+        <div class="feature-card fiu">
+          <div class="feature-icon">📱</div>
+          <div class="feature-name">Все устройства</div>
+          <div class="feature-desc">iPhone, Android, Windows, macOS. Один ключ — два устройства одновременно.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- PRICING -->
+  <section class="section pricing-bg" id="pricing-section">
+    <div class="section-inner" style="text-align:center">
+      <div class="section-label">Тарифы</div>
+      <h2 class="section-title fiu" style="margin-bottom:10px">Честные цены</h2>
+      <p class="section-sub fiu" style="margin:0 auto 52px">Никаких скрытых платежей. Пробный период — бесплатно.</p>
+      <div class="pricing-grid center" id="landing-plans"></div>
+      <p style="margin-top:28px;font-size:13px;color:var(--muted)">Войдите через Telegram чтобы купить или активировать пробный период</p>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- HOW IT WORKS -->
+  <section class="section">
+    <div class="section-inner" style="text-align:center">
+      <div class="section-label">Быстрый старт</div>
+      <h2 class="section-title fiu" style="margin-bottom:48px">Три шага до<br>свободного интернета</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;text-align:left">
+        <div class="fiu">
+          <div style="font-size:28px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px">01</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px">Войдите через Telegram</div>
+          <div style="font-size:14px;color:var(--muted)">Один клик — без регистрации и пароля.</div>
+        </div>
+        <div class="fiu">
+          <div style="font-size:28px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px">02</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px">Активируйте подписку</div>
+          <div style="font-size:14px;color:var(--muted)">Пробный день бесплатно или выберите тариф.</div>
+        </div>
+        <div class="fiu">
+          <div style="font-size:28px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px">03</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px">Скопируйте ключ</div>
+          <div style="font-size:14px;color:var(--muted)">Вставьте в v2rayTun или Happ — готово.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- LOGIN -->
+  <section class="section login-section" id="login-section">
+    <div class="login-card fiu">
+      <div style="font-size:40px;margin-bottom:16px">🔑</div>
+      <h2>Войти в кабинет</h2>
+      <p>Используйте ваш аккаунт Telegram. Если вы уже пользовались ботом — подписка сохранится.</p>
+      <div class="tg-widget-wrap" id="tg-widget"></div>
+    </div>
+  </section>
+
+  <footer>
+    <div style="margin-bottom:10px">
+      <a href="https://t.me/VpnPushka">Поддержка</a>
+      <a href="https://t.me/pushka_vpnbot">Telegram бот</a>
+    </div>
+    © 2025 PushkaVPN
+  </footer>
+</div>
+
+<!-- ══════════════════ DASHBOARD ══════════════════ -->
+<div id="dashboard" style="display:none">
+  <div class="dash-topbar">
+    <div class="dash-user">
+      <div class="dash-avatar" id="d-avatar">?</div>
+      <div>
+        <div class="dash-name" id="d-name">—</div>
+        <div class="dash-handle" id="d-handle"></div>
+      </div>
+    </div>
+    <button class="btn btn-ghost" style="font-size:13px;padding:8px 16px" onclick="logout()">Выйти</button>
+  </div>
+
+  <!-- Subscription -->
+  <div class="d-card">
+    <div class="d-card-label">Подписка</div>
+    <div id="d-sub-status"></div>
+    <div id="d-sub-details" class="sub-details" style="display:none"></div>
+  </div>
+
+  <!-- VLESS Key -->
+  <div class="d-card" id="d-key-card" style="display:none">
+    <div class="d-card-label">Ключ подключения</div>
+    <div class="key-box" id="d-key-text" onclick="copyKey()" title="Нажмите чтобы скопировать"></div>
+    <div class="key-btns">
+      <button class="key-btn kb-copy" onclick="copyKey()">📋 Скопировать</button>
+      <button class="key-btn kb-v2ray" onclick="openV2ray()">v2rayTun</button>
+      <button class="key-btn kb-happ" onclick="openHapp()">Happ</button>
+    </div>
+  </div>
+
+  <!-- Trial -->
+  <div class="d-card trial-card" id="d-trial-card" style="display:none">
+    <div class="emoji">🎁</div>
+    <h3>Пробный период</h3>
+    <p>1 день · 5 ГБ трафика — бесплатно</p>
+    <button class="btn btn-primary btn-full" onclick="activateTrial()">Активировать бесплатно</button>
+  </div>
+
+  <!-- Plans -->
+  <div id="d-plans-section">
+    <div class="d-card-label" style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted2);margin-bottom:12px">Купить подписку</div>
+    <div class="d-plans" id="d-plans-grid"></div>
+  </div>
+
+  <div style="height:48px"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://194-58-95-176.nip.io';
+const TOKEN_KEY = 'pushka_site_token_v1';
+let userData = null;
+let tgWidgetInjected = false;
+
+// ── BOOT ──
+window.addEventListener('load', () => {
+  lottie.loadAnimation({
+    container: document.getElementById('lottie-loader'),
+    renderer: 'svg', loop: true, autoplay: true, path: 'Connect.json',
+  });
+  lottie.loadAnimation({
+    container: document.getElementById('hero-lottie'),
+    renderer: 'svg', loop: true, autoplay: true, path: 'Connect.json',
+  });
+
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    loadDashboard(token);
+  } else {
+    showLanding();
+  }
+});
+
+function showLanding() {
+  document.getElementById('loading-screen').classList.add('out');
+  document.getElementById('landing').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('btn-login-nav').style.display = 'flex';
+  document.getElementById('btn-logout-nav').style.display = 'none';
+  renderLandingPlans();
+  if (!tgWidgetInjected) { injectWidget(); tgWidgetInjected = true; }
+  initScrollAnim();
+}
+
+function showDashboard() {
+  document.getElementById('loading-screen').classList.add('out');
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('btn-login-nav').style.display = 'none';
+  document.getElementById('btn-logout-nav').style.display = 'flex';
+}
+
+// ── TELEGRAM WIDGET ──
+function injectWidget() {
+  const wrap = document.getElementById('tg-widget');
+  if (wrap.children.length) return;
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://telegram.org/js/telegram-widget.js?22';
+  s.setAttribute('data-telegram-login', 'pushka_vpnbot');
+  s.setAttribute('data-size', 'large');
+  s.setAttribute('data-onauth', 'onTelegramAuth(user)');
+  s.setAttribute('data-request-access', 'write');
+  wrap.appendChild(s);
+}
+
+async function onTelegramAuth(tgUser) {
+  showToast('Авторизация...');
+  try {
+    const res = await fetch(`${API}/api/auth/telegram`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(tgUser),
+    });
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      await loadDashboard(data.token);
+    } else {
+      showToast('Ошибка авторизации');
+    }
+  } catch(e) {
+    showToast('Ошибка подключения к серверу');
+    console.error(e);
+  }
+}
+
+// ── DASHBOARD DATA ──
+async function loadDashboard(token) {
+  try {
+    const res = await fetch(`${API}/api/site/user`, {
+      headers: {'Authorization': `Bearer ${token}`},
+    });
+    if (!res.ok) {
+      localStorage.removeItem(TOKEN_KEY);
+      showLanding();
+      return;
+    }
+    userData = await res.json();
+    renderDashboard();
+    showDashboard();
+  } catch(e) {
+    showLanding();
+  }
+}
+
+function renderDashboard() {
+  const u = userData;
+  const name = u.first_name || u.username || 'Пользователь';
+  document.getElementById('d-avatar').textContent = name[0].toUpperCase();
+  document.getElementById('d-name').textContent = name;
+  document.getElementById('d-handle').textContent = u.username ? `@${u.username}` : `ID: ${u.user_id}`;
+
+  const sub = u.subscription || {};
+  const statusEl = document.getElementById('d-sub-status');
+  const detailsEl = document.getElementById('d-sub-details');
+
+  if (sub.active) {
+    statusEl.innerHTML = `<span class="status-pill status-on">● Активна</span>`;
+    let details = `${sub.plan} · до ${sub.end_date} (${sub.days_left} дн.)`;
+    if (sub.traffic) details += `\n📊 Трафик: ${sub.traffic}`;
+    detailsEl.textContent = details;
+    detailsEl.style.display = 'block';
+  } else {
+    statusEl.innerHTML = `<span class="status-pill status-off">● Нет подписки</span>`;
+    detailsEl.style.display = 'none';
+  }
+
+  // VLESS key
+  const keyCard = document.getElementById('d-key-card');
+  if (sub.active && u.vless_link) {
+    keyCard.style.display = 'block';
+    document.getElementById('d-key-text').textContent = u.vless_link;
+  } else {
+    keyCard.style.display = 'none';
+  }
+
+  // Trial
+  document.getElementById('d-trial-card').style.display =
+    (!u.trial_used && !sub.active) ? 'block' : 'none';
+
+  // Plans
+  renderDashPlans();
+}
+
+function renderDashPlans() {
+  const plans = [
+    { key:'month', name:'📆 Месячный', price:250, per:'/мес', meta:'30 дней · 50 ГБ · 2 устр.' },
+    { key:'year',  name:'📅 Годовой',  price:2490, per:'/год', meta:'365 дней · 600 ГБ · 2 устр.', feat:true },
+  ];
+  document.getElementById('d-plans-grid').innerHTML = plans.map(p => `
+    <div class="d-plan ${p.feat?'feat-plan':''}" onclick="buyPlan('${p.key}',${p.price})">
+      <div class="dp-name">${p.name}</div>
+      <div class="dp-price">${p.price}<span>₽${p.per}</span></div>
+      <div class="dp-meta">${p.meta}</div>
+    </div>
+  `).join('');
+}
+
+function renderLandingPlans() {
+  const plans = [
+    {
+      key:'month', name:'Месячный', price:250, per:'месяц',
+      feats:['30 дней','50 ГБ трафика','2 устройства','Все платформы'],
+    },
+    {
+      key:'year', name:'Годовой', price:2490, per:'год', badge:'Выгоднее',
+      feats:['365 дней','600 ГБ трафика','2 устройства','Экономия 510 ₽'],
+      featured:true,
+    },
+  ];
+  document.getElementById('landing-plans').innerHTML = plans.map(p => `
+    <div class="plan-card ${p.featured?'featured':''}" onclick="scrollToLogin()">
+      ${p.badge ? `<div class="plan-badge">${p.badge}</div>` : ''}
+      <div class="plan-name">${p.name}</div>
+      <div class="plan-price">${p.price}<sub> ₽</sub></div>
+      <div class="plan-period">в ${p.per}</div>
+      <ul class="plan-feats">
+        ${p.feats.map(f=>`<li><span class="ck">✓</span>${f}</li>`).join('')}
+      </ul>
+      <button class="btn btn-primary btn-full" style="border-radius:12px;padding:13px">Выбрать</button>
+    </div>
+  `).join('');
+}
+
+// ── ACTIONS ──
+async function activateTrial() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  showToast('Активация...');
+  try {
+    const res = await fetch(`${API}/api/site/trial/activate`, {
+      method: 'POST',
+      headers: {'Authorization': `Bearer ${token}`},
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('✅ Пробный период активирован!');
+      setTimeout(() => loadDashboard(token), 1200);
+    } else {
+      showToast(data.error || 'Ошибка активации');
+    }
+  } catch(e) { showToast('Ошибка сети'); }
+}
+
+async function buyPlan(planKey, price) {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) { scrollToLogin(); return; }
+  showToast('Создание платежа...');
+  try {
+    const res = await fetch(`${API}/api/site/payment/create`, {
+      method: 'POST',
+      headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
+      body: JSON.stringify({ plan: planKey, amount: price }),
+    });
+    const data = await res.json();
+    if (data.payment_url) {
+      window.open(data.payment_url, '_blank');
+    } else {
+      showToast(data.detail || 'Ошибка создания платежа');
+    }
+  } catch(e) { showToast('Ошибка сети'); }
+}
+
+function copyKey() {
+  const key = document.getElementById('d-key-text').textContent;
+  if (!key) return;
+  navigator.clipboard.writeText(key).then(() => showToast('✅ Ключ скопирован'));
+}
+function openV2ray() {
+  if (!userData?.vless_link) return;
+  window.location.href = 'v2raytun://import/' + encodeURIComponent(userData.vless_link);
+}
+function openHapp() {
+  if (!userData?.vless_link) return;
+  window.location.href = 'happ://add/' + encodeURIComponent(userData.vless_link);
+}
+
+// ── NAV ──
+function logout() {
+  localStorage.removeItem(TOKEN_KEY);
+  userData = null;
+  showLanding();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function goHome() {
+  if (userData) showDashboard();
+  else { showLanding(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  return false;
+}
+function scrollToLogin() {
+  document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' });
+}
+function scrollToPricing() {
+  document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── SCROLL ANIMATIONS ──
+function initScrollAnim() {
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fiu').forEach(el => io.observe(el));
+}
+
+// ── TOAST ──
+let _tt;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
