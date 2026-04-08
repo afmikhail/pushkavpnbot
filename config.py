@@ -38,7 +38,7 @@ PLANS = {
         "name": "📅 Годовой",
         "days": 365,
         "price": 2490,
-        "traffic_gb": 0,
+        "traffic_gb": 600,
         "devices": 2,
     },
 }
