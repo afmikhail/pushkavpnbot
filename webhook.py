@@ -9,6 +9,11 @@ import logging
 import json
 import secrets
 import time
+import random
+import smtplib
+import asyncio
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from fastapi import FastAPI, Request, HTTPException, Header, Depends
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +25,7 @@ from urllib.parse import unquote
 from aiogram import Bot
 from aiogram.types import LabeledPrice
 
-from config import VKASSA_SECRET_KEY, BOT_TOKEN, PLANS, YUKASSA_PROVIDER_TOKEN
+from config import VKASSA_SECRET_KEY, BOT_TOKEN, PLANS, YUKASSA_PROVIDER_TOKEN, GMAIL_USER, GMAIL_APP_PASSWORD
 from database import UserDB, PaymentDB, db
 from subscription import SubscriptionService
 from payment import vkassa
@@ -184,6 +189,7 @@ async def get_user(x_init_data: str = Header(None)):
         "referrals_count": len(user.get("referrals", [])),
         "referral_earnings": user.get("referral_earnings", 0.0),
         "vless_link": vless_link,
+        "email": user.get("email", ""),
     }
 
 
@@ -425,32 +431,6 @@ async def auth_telegram(request: Request):
     return {"token": token}
 
 
-# ── Site user API ──
-
-@app.get("/api/site/user")
-async def site_get_user(user_id: int = Depends(_require_site_user)):
-    user = await UserDB.get_user(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    sub_info = await SubscriptionService.get_subscription_info(user_id)
-    vless_link = ""
-    xui_uuid = user.get("xui_uuid")
-    if sub_info.get("active") and xui_uuid:
-        from xui_client import xui_client
-        try:
-            vless_link = await xui_client.get_client_vless_link(xui_uuid) or ""
-        except Exception as e:
-            logger.error(f"Site VLESS link error user {user_id}: {e}")
-    return {
-        "user_id": user_id,
-        "first_name": user.get("first_name", ""),
-        "username": user.get("username", ""),
-        "balance": user.get("balance", 0.0),
-        "subscription": sub_info,
-        "trial_used": user.get("trial_used", False),
-        "vless_link": vless_link,
-    }
-
 
 @app.post("/api/site/trial/activate")
 async def site_activate_trial(user_id: int = Depends(_require_site_user)):
@@ -487,3 +467,242 @@ async def site_create_payment(request: Request, user_id: int = Depends(_require_
 
     await PaymentDB.create_payment(order_id, user_id, amount, plan_key)
     return {"payment_url": payment_data["payment_url"], "order_id": order_id}
+
+
+# ══════════════════════════════════════════════════════════
+#  EMAIL AUTH — OTP send / verify
+# ══════════════════════════════════════════════════════════
+
+async def _send_otp_email(to_email: str, code: str):
+    def _send():
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Код входа в PushkaVPN: {code}"
+        msg["From"] = f"PushkaVPN <{GMAIL_USER}>"
+        msg["To"] = to_email
+        html = f"""
+        <div style="font-family:Inter,sans-serif;background:#000;color:#f5f5f7;padding:40px;max-width:480px;margin:0 auto;border-radius:16px">
+          <img src="https://194-58-95-176.nip.io/logo.png" width="40" style="border-radius:8px;margin-bottom:16px">
+          <h2 style="margin:0 0 8px;font-size:22px">Код подтверждения</h2>
+          <p style="color:#86868b;margin:0 0 24px">Введите этот код на сайте PushkaVPN</p>
+          <div style="background:#111;border:1px solid #222;border-radius:12px;padding:24px;text-align:center;font-size:36px;font-weight:800;letter-spacing:0.2em">{code}</div>
+          <p style="color:#48484a;font-size:12px;margin-top:20px">Код действителен 10 минут. Если вы не запрашивали код — просто игнорируйте это письмо.</p>
+        </div>"""
+        msg.attach(MIMEText(html, "html"))
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+            s.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            s.send_message(msg)
+    await asyncio.get_event_loop().run_in_executor(None, _send)
+
+
+def _get_email_user_id(email: str):
+    """Lookup user_id for email from email_users collection."""
+    if db is None:
+        return None
+    doc = db.collection("email_users").document(email.lower()).get()
+    return doc.to_dict().get("user_id") if doc.exists else None
+
+
+def _set_email_user_id(email: str, user_id: int):
+    if db:
+        db.collection("email_users").document(email.lower()).set({"email": email.lower(), "user_id": user_id})
+
+
+@app.post("/api/auth/email/send")
+async def auth_email_send(request: Request):
+    body = await request.json()
+    email = (body.get("email") or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Некорректный email")
+
+    code = str(random.randint(100000, 999999))
+    expires = datetime.now(timezone.utc) + timedelta(minutes=10)
+    if db:
+        db.collection("email_codes").add({
+            "email": email,
+            "code": code,
+            "expires_at": expires,
+            "used": False,
+        })
+    try:
+        await _send_otp_email(email, code)
+    except Exception as e:
+        logger.error(f"Email send error: {e}")
+        raise HTTPException(status_code=500, detail="Не удалось отправить письмо")
+    logger.info(f"OTP sent to {email}")
+    return {"ok": True}
+
+
+@app.post("/api/auth/email/verify")
+async def auth_email_verify(request: Request):
+    body = await request.json()
+    email = (body.get("email") or "").strip().lower()
+    code = (body.get("code") or "").strip()
+
+    if not email or not code:
+        raise HTTPException(status_code=400, detail="email и code обязательны")
+
+    if db is None:
+        raise HTTPException(status_code=500, detail="DB unavailable")
+
+    now = datetime.now(timezone.utc)
+    docs = db.collection("email_codes")\
+        .where("email", "==", email)\
+        .where("code", "==", code)\
+        .where("used", "==", False)\
+        .stream()
+
+    valid_doc = None
+    for d in docs:
+        data = d.to_dict()
+        exp = data.get("expires_at")
+        if exp and exp.replace(tzinfo=timezone.utc) > now:
+            valid_doc = d
+            break
+
+    if not valid_doc:
+        raise HTTPException(status_code=401, detail="Неверный или просроченный код")
+
+    valid_doc.reference.update({"used": True})
+
+    # Get or create user
+    user_id = _get_email_user_id(email)
+    if not user_id:
+        user_id = random.randint(10**12, 10**13)
+        await UserDB.get_or_create_user(user_id, "", email.split("@")[0])
+        await UserDB.update_user(user_id, {"email": email})
+        _set_email_user_id(email, user_id)
+    else:
+        user = await UserDB.get_user(user_id)
+        if not user:
+            await UserDB.get_or_create_user(user_id, "", email.split("@")[0])
+            await UserDB.update_user(user_id, {"email": email})
+
+    token = secrets.token_hex(32)
+    expires_session = datetime.now(timezone.utc) + timedelta(days=30)
+    db.collection("sessions").document(token).set({
+        "user_id": user_id,
+        "created_at": datetime.now(timezone.utc),
+        "expires_at": expires_session,
+    })
+    _sessions[token] = user_id
+    logger.info(f"Email auth: {email} -> user_id={user_id}")
+    return {"token": token}
+
+
+# ── Return email in site user response ──
+# (patch site_get_user to include email field)
+
+@app.get("/api/site/user")
+async def site_get_user_v2(user_id: int = Depends(_require_site_user)):
+    user = await UserDB.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    sub_info = await SubscriptionService.get_subscription_info(user_id)
+    vless_link = ""
+    xui_uuid = user.get("xui_uuid")
+    if sub_info.get("active") and xui_uuid:
+        from xui_client import xui_client
+        try:
+            vless_link = await xui_client.get_client_vless_link(xui_uuid) or ""
+        except Exception as e:
+            logger.error(f"Site VLESS link error user {user_id}: {e}")
+    return {
+        "user_id": user_id,
+        "first_name": user.get("first_name", ""),
+        "username": user.get("username", ""),
+        "email": user.get("email", ""),
+        "tg_username": user.get("username", ""),
+        "balance": user.get("balance", 0.0),
+        "subscription": sub_info,
+        "trial_used": user.get("trial_used", False),
+        "vless_link": vless_link,
+    }
+
+
+# ── Generate TG link code (site user wants to link Telegram) ──
+
+@app.post("/api/site/link/tg/generate")
+async def site_generate_tg_link(user_id: int = Depends(_require_site_user)):
+    code = secrets.token_hex(4).upper()  # e.g. "A1B2C3D4"
+    expires = datetime.now(timezone.utc) + timedelta(minutes=15)
+    if db:
+        db.collection("tg_link_codes").document(code).set({
+            "site_user_id": user_id,
+            "expires_at": expires,
+            "used": False,
+        })
+    return {"code": code, "bot": "pushka_vpnbot"}
+
+
+# ── Mini App: TG user links email ──
+
+@app.post("/api/auth/link/email/send")
+async def link_email_send(request: Request, x_init_data: str = Header(None)):
+    raw = parse_init_data_header(x_init_data)
+    tg_user = verify_telegram_init_data(raw) if raw else None
+    if not tg_user:
+        raise HTTPException(status_code=401, detail="Invalid init data")
+
+    body = await request.json()
+    email = (body.get("email") or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Некорректный email")
+
+    code = str(random.randint(100000, 999999))
+    expires = datetime.now(timezone.utc) + timedelta(minutes=10)
+    if db:
+        db.collection("email_codes").add({
+            "email": email,
+            "code": code,
+            "expires_at": expires,
+            "used": False,
+            "link_tg_id": tg_user.get("id"),
+        })
+    try:
+        await _send_otp_email(email, code)
+    except Exception as e:
+        logger.error(f"Link email send error: {e}")
+        raise HTTPException(status_code=500, detail="Не удалось отправить письмо")
+    return {"ok": True}
+
+
+@app.post("/api/auth/link/email/verify")
+async def link_email_verify(request: Request, x_init_data: str = Header(None)):
+    raw = parse_init_data_header(x_init_data)
+    tg_user = verify_telegram_init_data(raw) if raw else None
+    if not tg_user:
+        raise HTTPException(status_code=401, detail="Invalid init data")
+
+    body = await request.json()
+    email = (body.get("email") or "").strip().lower()
+    code = (body.get("code") or "").strip()
+    tg_user_id = tg_user.get("id")
+
+    if db is None:
+        raise HTTPException(status_code=500, detail="DB unavailable")
+
+    now = datetime.now(timezone.utc)
+    docs = db.collection("email_codes")\
+        .where("email", "==", email)\
+        .where("code", "==", code)\
+        .where("used", "==", False)\
+        .stream()
+
+    valid_doc = None
+    for d in docs:
+        data = d.to_dict()
+        exp = data.get("expires_at")
+        if exp and exp.replace(tzinfo=timezone.utc) > now:
+            valid_doc = d
+            break
+
+    if not valid_doc:
+        raise HTTPException(status_code=401, detail="Неверный или просроченный код")
+
+    valid_doc.reference.update({"used": True})
+
+    # Link email to TG user
+    await UserDB.update_user(tg_user_id, {"email": email})
+    _set_email_user_id(email, tg_user_id)
+    logger.info(f"Email linked: {email} -> tg_user_id={tg_user_id}")
+    return {"ok": True}

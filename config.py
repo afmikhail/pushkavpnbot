@@ -51,5 +51,9 @@ TRIAL_TRAFFIC_GB = 5
 REFERRAL_COMMISSION_PERCENT = 40
 REFERRAL_MIN_PAYOUT = 100  # rubles
 
+# Gmail SMTP for OTP emails
+GMAIL_USER = os.getenv("GMAIL_USER", "pushkavpn@gmail.com")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "qmylmvxaagcydxhs")
+
 # Admin
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "0").split(",") if x.strip()]

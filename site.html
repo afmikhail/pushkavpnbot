@@ -254,7 +254,19 @@
       letter-spacing: -0.5px; margin-bottom: 10px;
     }
     .login-card p { color: var(--muted); font-size: 14px; line-height: 1.65; margin-bottom: 28px; }
-    .tg-widget-wrap { display: flex; justify-content: center; min-height: 56px; }
+    .auth-input {
+      width: 100%; padding: 14px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border2);
+      border-radius: 12px; color: var(--text);
+      font-size: 16px; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
+    }
+    .auth-input:focus { border-color: var(--accent); }
+    .auth-input::placeholder { color: var(--muted2); }
+    .auth-code-input {
+      letter-spacing: 0.35em; text-align: center; font-size: 28px; font-weight: 700;
+    }
 
     /* ── DASHBOARD ── */
     #dashboard {
@@ -515,10 +527,19 @@
   <!-- LOGIN -->
   <section class="section login-section" id="login-section">
     <div class="login-card fiu">
-      <div style="font-size:40px;margin-bottom:16px">🔑</div>
+      <div style="font-size:40px;margin-bottom:16px">✉️</div>
       <h2>Войти в кабинет</h2>
-      <p>Используйте ваш аккаунт Telegram. Если вы уже пользовались ботом — подписка сохранится.</p>
-      <div class="tg-widget-wrap" id="tg-widget"></div>
+      <p>Введите email — пришлём код подтверждения. Если уже пользовались ботом — подписка сохранится после привязки аккаунта.</p>
+      <div id="auth-step-email">
+        <input type="email" id="auth-email-input" class="auth-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')sendEmailCode()">
+        <button class="btn btn-primary btn-full" style="margin-top:10px;border-radius:12px;padding:14px" onclick="sendEmailCode()">Получить код →</button>
+      </div>
+      <div id="auth-step-code" style="display:none">
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;text-align:center">Код отправлен на <b id="auth-email-show" style="color:var(--text)"></b></p>
+        <input type="text" id="auth-code-input" class="auth-input auth-code-input" placeholder="000000" maxlength="6" inputmode="numeric" onkeydown="if(event.key==='Enter')verifyEmailCode()">
+        <button class="btn btn-primary btn-full" style="margin-top:10px;border-radius:12px;padding:14px" onclick="verifyEmailCode()">Войти →</button>
+        <button onclick="backToEmail()" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;margin-top:10px;width:100%">← Изменить email</button>
+      </div>
     </div>
   </section>
 
@@ -576,6 +597,21 @@
     <div class="d-plans" id="d-plans-grid"></div>
   </div>
 
+  <!-- Account -->
+  <div class="d-card">
+    <div class="d-card-label">Аккаунт</div>
+    <div id="d-account-info" style="font-size:14px;color:var(--muted);line-height:2"></div>
+    <div id="d-tg-link-section" style="margin-top:14px;display:none">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Привяжите Telegram чтобы использовать бота и мини-приложение</div>
+      <button class="btn btn-ghost" style="font-size:13px;padding:9px 16px" onclick="generateTgCode()">Привязать Telegram</button>
+      <div id="d-tg-code-box" style="display:none;margin-top:12px;background:rgba(0,0,0,0.4);border:1px solid var(--border2);border-radius:10px;padding:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Отправьте боту команду:</div>
+        <div style="font-family:monospace;font-size:16px;font-weight:700;letter-spacing:0.05em" id="d-tg-code-text"></div>
+        <div style="font-size:11px;color:var(--muted2);margin-top:6px">Действует 15 минут</div>
+      </div>
+    </div>
+  </div>
+
   <div style="height:48px"></div>
 </div>
 
@@ -585,7 +621,6 @@
 const API = 'https://194-58-95-176.nip.io';
 const TOKEN_KEY = 'pushka_site_token_v1';
 let userData = null;
-let tgWidgetInjected = false;
 
 // ── BOOT ──
 window.addEventListener('load', () => {
@@ -613,7 +648,6 @@ function showLanding() {
   document.getElementById('btn-login-nav').style.display = 'flex';
   document.getElementById('btn-logout-nav').style.display = 'none';
   renderLandingPlans();
-  if (!tgWidgetInjected) { injectWidget(); tgWidgetInjected = true; }
   initScrollAnim();
 }
 
@@ -625,39 +659,48 @@ function showDashboard() {
   document.getElementById('btn-logout-nav').style.display = 'flex';
 }
 
-// ── TELEGRAM WIDGET ──
-function injectWidget() {
-  const wrap = document.getElementById('tg-widget');
-  if (wrap.children.length) return;
-  const s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://telegram.org/js/telegram-widget.js?22';
-  s.setAttribute('data-telegram-login', 'pushka_vpnbot');
-  s.setAttribute('data-size', 'large');
-  s.setAttribute('data-onauth', 'onTelegramAuth(user)');
-  s.setAttribute('data-request-access', 'write');
-  wrap.appendChild(s);
+// ── EMAIL AUTH ──
+let _authEmail = '';
+
+async function sendEmailCode() {
+  const email = document.getElementById('auth-email-input').value.trim();
+  if (!email || !email.includes('@')) { showToast('Введите корректный email'); return; }
+  showToast('Отправляем код...');
+  try {
+    const res = await fetch(`${API}/api/auth/email/send`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) { const d = await res.json(); showToast(d.detail || 'Ошибка'); return; }
+    _authEmail = email;
+    document.getElementById('auth-email-show').textContent = email;
+    document.getElementById('auth-step-email').style.display = 'none';
+    document.getElementById('auth-step-code').style.display = 'block';
+    document.getElementById('auth-code-input').focus();
+    showToast('✅ Код отправлен');
+  } catch(e) { showToast('Ошибка сети'); }
 }
 
-async function onTelegramAuth(tgUser) {
-  showToast('Авторизация...');
+async function verifyEmailCode() {
+  const code = document.getElementById('auth-code-input').value.trim();
+  if (code.length !== 6) { showToast('Введите 6-значный код'); return; }
+  showToast('Проверяем...');
   try {
-    const res = await fetch(`${API}/api/auth/telegram`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(tgUser),
+    const res = await fetch(`${API}/api/auth/email/verify`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email: _authEmail, code }),
     });
+    if (!res.ok) { const d = await res.json(); showToast(d.detail || 'Неверный код'); return; }
     const data = await res.json();
-    if (data.token) {
-      localStorage.setItem(TOKEN_KEY, data.token);
-      await loadDashboard(data.token);
-    } else {
-      showToast('Ошибка авторизации');
-    }
-  } catch(e) {
-    showToast('Ошибка подключения к серверу');
-    console.error(e);
-  }
+    localStorage.setItem(TOKEN_KEY, data.token);
+    await loadDashboard(data.token);
+  } catch(e) { showToast('Ошибка сети'); }
+}
+
+function backToEmail() {
+  document.getElementById('auth-step-code').style.display = 'none';
+  document.getElementById('auth-step-email').style.display = 'block';
+  document.getElementById('auth-code-input').value = '';
 }
 
 // ── DASHBOARD DATA ──
@@ -710,9 +753,13 @@ function renderDashboard() {
     keyCard.style.display = 'none';
   }
 
-  // Trial
-  document.getElementById('d-trial-card').style.display =
-    (!u.trial_used && !sub.active) ? 'block' : 'none';
+  // Account info
+  const accEl = document.getElementById('d-account-info');
+  let accHtml = `📧 ${u.email || '—'}`;
+  if (u.tg_username) accHtml += `<br>✈️ @${u.tg_username}`;
+  accEl.innerHTML = accHtml;
+  const tgLinkSec = document.getElementById('d-tg-link-section');
+  tgLinkSec.style.display = u.tg_username ? 'none' : 'block';
 
   // Plans
   renderDashPlans();
@@ -794,6 +841,21 @@ async function buyPlan(planKey, price) {
       showToast(data.detail || 'Ошибка создания платежа');
     }
   } catch(e) { showToast('Ошибка сети'); }
+}
+
+async function generateTgCode() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  try {
+    const res = await fetch(`${API}/api/site/link/tg/generate`, {
+      method: 'POST', headers: {'Authorization': `Bearer ${token}`},
+    });
+    const data = await res.json();
+    const cmd = `/link ${data.code}`;
+    document.getElementById('d-tg-code-text').textContent = cmd;
+    document.getElementById('d-tg-code-box').style.display = 'block';
+    navigator.clipboard?.writeText(cmd);
+    showToast('Команда скопирована');
+  } catch(e) { showToast('Ошибка'); }
 }
 
 function copyKey() {

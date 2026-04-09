@@ -137,6 +137,7 @@
     <div id="trial-section"></div>
     <div id="sub-status-section"></div>
     <div id="vless-section"></div>
+    <div id="email-link-section"></div>
   </div>
 </div>
 
@@ -315,6 +316,31 @@ function renderAll() {
     vlessEl.innerHTML = '';
   }
 
+  // Email link section
+  const emailEl = document.getElementById('email-link-section');
+  if (!userData.email) {
+    emailEl.innerHTML = `
+      <div class="card" id="email-link-card">
+        <div style="font-weight:600;margin-bottom:6px">📧 Привязать почту</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:12px">Войдите на сайт pushkavpn без Telegram</div>
+        <div id="el-step-email">
+          <input class="input" id="el-email-input" type="email" placeholder="your@email.com">
+          <button class="btn btn-primary" style="margin-top:8px" onclick="elSendCode()">Получить код</button>
+        </div>
+        <div id="el-step-code" style="display:none">
+          <div style="color:var(--muted);font-size:12px;margin-bottom:8px">Код отправлен на <b id="el-email-show" style="color:var(--text)"></b></div>
+          <input class="input" id="el-code-input" type="text" placeholder="000000" maxlength="6" inputmode="numeric" style="letter-spacing:0.25em;text-align:center;font-size:20px;font-weight:700">
+          <button class="btn btn-primary" style="margin-top:8px" onclick="elVerifyCode()">Подтвердить</button>
+          <button onclick="elBack()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;margin-top:6px;display:block">← Изменить email</button>
+        </div>
+      </div>`;
+  } else {
+    emailEl.innerHTML = `<div class="card" style="display:flex;align-items:center;gap:10px;padding:14px 16px">
+      <span style="font-size:18px">📧</span>
+      <div style="font-size:13px"><span style="color:var(--muted)">Почта привязана:</span><br><b>${userData.email}</b></div>
+    </div>`;
+  }
+
   // Subscription tab
   document.getElementById('sub-current-status').innerHTML = sub.active
     ? `<div class="status-active">✅ ${sub.plan} · до ${sub.end_date}</div>`
@@ -459,6 +485,44 @@ function openHapp() {
 
 function openSupport() {
   tg.openLink('https://t.me/VpnPushka');
+}
+
+let _elEmail = '';
+async function elSendCode() {
+  const email = document.getElementById('el-email-input').value.trim();
+  if (!email || !email.includes('@')) { showToast('Введите email'); return; }
+  showToast('Отправляем код...');
+  try {
+    const res = await apiCall('/api/auth/link/email/send', {
+      method: 'POST', body: JSON.stringify({ email }),
+    });
+    if (res.ok) {
+      _elEmail = email;
+      document.getElementById('el-email-show').textContent = email;
+      document.getElementById('el-step-email').style.display = 'none';
+      document.getElementById('el-step-code').style.display = 'block';
+      showToast('✅ Код отправлен');
+    }
+  } catch(e) { tg.showAlert('❌ ' + e.message); }
+}
+async function elVerifyCode() {
+  const code = document.getElementById('el-code-input').value.trim();
+  if (code.length !== 6) { showToast('Введите 6-значный код'); return; }
+  showToast('Проверяем...');
+  try {
+    const res = await apiCall('/api/auth/link/email/verify', {
+      method: 'POST', body: JSON.stringify({ email: _elEmail, code }),
+    });
+    if (res.ok) {
+      showToast('✅ Почта привязана!');
+      await loadData();
+    }
+  } catch(e) { tg.showAlert('❌ ' + e.message); }
+}
+function elBack() {
+  document.getElementById('el-step-code').style.display = 'none';
+  document.getElementById('el-step-email').style.display = 'block';
+  document.getElementById('el-code-input').value = '';
 }
 
 async function refreshData() {
