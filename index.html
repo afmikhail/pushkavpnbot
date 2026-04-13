@@ -111,6 +111,18 @@
   .amount-btn.selected{border-color:var(--accent);background:rgba(229,57,53,0.12);color:var(--accent2)}
   .amount-btn:active{transform:scale(0.97)}
   .divider{height:1px;background:var(--border);margin:4px 0}
+  /* guide */
+  .gtabs{display:flex;gap:6px;margin-bottom:14px}
+  .gtab{flex:1;padding:8px 4px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Onest',sans-serif;transition:all 0.15s}
+  .gtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .gpanel{display:none}
+  .gpanel.on{display:block}
+  .gstep{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+  .gstep:last-child{border-bottom:none;padding-bottom:0}
+  .gnum{width:22px;height:22px;border-radius:50%;flex-shrink:0;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;margin-top:1px}
+  .gtitle{font-size:13px;font-weight:600;margin-bottom:2px}
+  .gdesc{font-size:12px;color:var(--muted);line-height:1.5}
+  .gdl{display:inline-flex;align-items:center;gap:5px;margin-top:7px;padding:6px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-weight:500;text-decoration:none}
 </style>
 </head>
 <body>
@@ -307,9 +319,50 @@ function renderAll() {
         <div style="font-weight:600;margin-bottom:10px">🔑 Ваш VLESS ключ</div>
         <div class="vless-block">${userData.vless_link}</div>
         <button class="btn btn-primary" style="margin-bottom:8px" onclick="copyVless()">📋 Скопировать ключ</button>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;margin-bottom:16px">
           <button class="btn btn-outline" style="flex:1" onclick="openV2ray()">v2rayTun</button>
           <button class="btn btn-outline" style="flex:1" onclick="openHapp()">Happ</button>
+        </div>
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Как подключиться</div>
+        <div class="gtabs">
+          <button class="gtab on" onclick="switchGTab('iphone',this)">iPhone</button>
+          <button class="gtab" onclick="switchGTab('android',this)">Android</button>
+        </div>
+        <div class="gpanel on" id="gp-iphone">
+          <div class="gstep">
+            <div class="gnum">1</div>
+            <div><div class="gtitle">Установите Streisand</div>
+            <div class="gdesc">Бесплатно в App Store</div>
+            <a class="gdl" href="https://apps.apple.com/app/streisand/id6450534064">⬇ App Store</a></div>
+          </div>
+          <div class="gstep">
+            <div class="gnum">2</div>
+            <div><div class="gtitle">Импортируйте ключ</div>
+            <div class="gdesc">Нажмите <b>v2rayTun</b> выше — ключ откроется автоматически. Или скопируйте ключ и в Streisand нажмите «+» → «Из буфера».</div></div>
+          </div>
+          <div class="gstep">
+            <div class="gnum">3</div>
+            <div><div class="gtitle">Нажмите Connect</div>
+            <div class="gdesc">Разрешите создание VPN-профиля когда iOS спросит.</div></div>
+          </div>
+        </div>
+        <div class="gpanel" id="gp-android">
+          <div class="gstep">
+            <div class="gnum">1</div>
+            <div><div class="gtitle">Установите v2rayNG</div>
+            <div class="gdesc">Бесплатно в Google Play</div>
+            <a class="gdl" href="https://play.google.com/store/apps/details?id=com.v2ray.ang">⬇ Google Play</a></div>
+          </div>
+          <div class="gstep">
+            <div class="gnum">2</div>
+            <div><div class="gtitle">Импортируйте ключ</div>
+            <div class="gdesc">Скопируйте ключ кнопкой выше. В v2rayNG нажмите «+» → «Импорт из буфера обмена».</div></div>
+          </div>
+          <div class="gstep">
+            <div class="gnum">3</div>
+            <div><div class="gtitle">Нажмите ▶ для запуска</div>
+            <div class="gdesc">Разрешите создание VPN-профиля когда Android спросит.</div></div>
+          </div>
         </div>
       </div>`;
   } else {
@@ -458,6 +511,14 @@ async function openInvoice({ plan, amount }) {
   } catch (e) {
     tg.showAlert('❌ ' + e.message);
   }
+}
+
+function switchGTab(tab, btn) {
+  document.querySelectorAll('.gtab').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.gpanel').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  const panel = document.getElementById('gp-' + tab);
+  if (panel) panel.classList.add('on');
 }
 
 function copyVless() {
