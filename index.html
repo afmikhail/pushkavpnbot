@@ -275,8 +275,6 @@ function renderAll() {
   const name = userData.first_name || tgUser.first_name || 'Пользователь';
   const sub = userData.subscription || {};
 
-  document.getElementById('hero-name').textContent = `Привет, ${name}!`;
-  document.getElementById('hero-badge').textContent = sub.active ? `⭐ ${sub.plan}` : '⭐ Базовый';
 
   // Trial block
   const trialEl = document.getElementById('trial-section');
