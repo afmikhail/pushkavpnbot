@@ -378,7 +378,11 @@ function renderAll() {
         <div style="color:var(--muted);font-size:12px;margin-bottom:12px">Войдите на сайт pushkavpn без Telegram</div>
         <div id="el-step-email">
           <input class="input" id="el-email-input" type="email" placeholder="your@email.com">
-          <button class="btn btn-primary" style="margin-top:8px" onclick="elSendCode()">Получить код</button>
+          <label style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;cursor:pointer">
+            <input type="checkbox" id="el-agree-terms" style="margin-top:3px;flex-shrink:0;accent-color:var(--accent);width:14px;height:14px;cursor:pointer">
+            <span style="font-size:12px;color:var(--muted);line-height:1.5">Согласен с <a href="https://vpnpushka.ru/terms" target="_blank" style="color:var(--text)">политикой конфиденциальности</a></span>
+          </label>
+          <button class="btn btn-primary" style="margin-top:10px" onclick="elSendCode()">Получить код</button>
         </div>
         <div id="el-step-code" style="display:none">
           <div style="color:var(--muted);font-size:12px;margin-bottom:8px">Код отправлен на <b id="el-email-show" style="color:var(--text)"></b></div>
@@ -552,6 +556,9 @@ let _elEmail = '';
 async function elSendCode() {
   const email = document.getElementById('el-email-input').value.trim();
   if (!email || !email.includes('@')) { showToast('Введите email'); return; }
+  if (!document.getElementById('el-agree-terms')?.checked) {
+    showToast('Необходимо согласиться с политикой'); return;
+  }
   showToast('Отправляем код...');
   try {
     const res = await apiCall('/api/auth/link/email/send', {
