@@ -311,22 +311,11 @@ function renderAll() {
     // fill sub URL after innerHTML is set (done via setTimeout below)
     vlessEl.innerHTML = `
       <div class="card">
-        <div style="font-weight:600;margin-bottom:10px">🔑 Ваш VLESS ключ</div>
-        <div class="vless-block">${userData.vless_link}</div>
-        <button class="btn btn-primary" style="margin-bottom:8px" onclick="copyVless()">📋 Скопировать ключ</button>
-        <div style="display:flex;gap:8px;margin-bottom:16px">
-          <button class="btn btn-outline" style="flex:1" onclick="openV2ray()">v2rayTun</button>
-          <button class="btn btn-outline" style="flex:1" onclick="openHapp()">Happ</button>
-        </div>
-        <div style="padding-top:12px;border-top:1px solid var(--border);margin-bottom:4px">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:6px">Ссылка подписки</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">Добавьте в Happ как подписку — приложение покажет оставшиеся дни и трафик.</div>
-          <div class="vless-block" id="sub-url-block" style="font-size:10px"></div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline" style="flex:1;font-size:12px" onclick="copySubUrl()">📋 Ссылка</button>
-            <button class="btn btn-outline" style="flex:1;font-size:12px" onclick="openHappSub()">Открыть в Happ</button>
-          </div>
-        </div>
+        <div style="font-weight:600;margin-bottom:6px">🔗 Подключение</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5">Добавьте ссылку подписки в Happ — приложение покажет оставшиеся дни и трафик.</div>
+        <div class="vless-block" id="sub-url-block" style="font-size:10px"></div>
+        <button class="btn btn-primary" style="margin-bottom:8px" onclick="copySubUrl()">📋 Скопировать ссылку</button>
+        <button class="btn btn-outline" style="width:100%;margin-bottom:16px" onclick="openHappSub()">Открыть в Happ</button>
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Как подключиться</div>
         <div class="gtabs">
           <button class="gtab on" onclick="switchGTab('iphone',this)">iPhone</button>
