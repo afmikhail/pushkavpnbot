@@ -308,6 +308,7 @@ function renderAll() {
 
   const vlessEl = document.getElementById('vless-section');
   if (sub.active && userData.vless_link) {
+    // fill sub URL after innerHTML is set (done via setTimeout below)
     vlessEl.innerHTML = `
       <div class="card">
         <div style="font-weight:600;margin-bottom:10px">🔑 Ваш VLESS ключ</div>
@@ -316,6 +317,15 @@ function renderAll() {
         <div style="display:flex;gap:8px;margin-bottom:16px">
           <button class="btn btn-outline" style="flex:1" onclick="openV2ray()">v2rayTun</button>
           <button class="btn btn-outline" style="flex:1" onclick="openHapp()">Happ</button>
+        </div>
+        <div style="padding-top:12px;border-top:1px solid var(--border);margin-bottom:4px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:6px">Ссылка подписки</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">Добавьте в Happ как подписку — приложение покажет оставшиеся дни и трафик.</div>
+          <div class="vless-block" id="sub-url-block" style="font-size:10px"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" style="flex:1;font-size:12px" onclick="copySubUrl()">📋 Ссылка</button>
+            <button class="btn btn-outline" style="flex:1;font-size:12px" onclick="openHappSub()">Открыть в Happ</button>
+          </div>
         </div>
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Как подключиться</div>
         <div class="gtabs">
@@ -359,6 +369,12 @@ function renderAll() {
           </div>
         </div>
       </div>`;
+    // Fill subscription URL field after DOM update
+    const uuid = sub.uuid;
+    if (uuid) {
+      const el = document.getElementById('sub-url-block');
+      if (el) el.textContent = `https://vpnpushka.ru/sub/${uuid}`;
+    }
   } else {
     vlessEl.innerHTML = '';
   }
@@ -509,6 +525,20 @@ async function openInvoice({ plan, amount }) {
   } catch (e) {
     tg.showAlert('❌ ' + e.message);
   }
+}
+
+function copySubUrl() {
+  const uuid = userData?.subscription?.uuid;
+  if (!uuid) return;
+  const url = `https://vpnpushka.ru/sub/${uuid}`;
+  navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована')).catch(() => {
+    tg.HapticFeedback?.notificationOccurred('success');
+  });
+}
+function openHappSub() {
+  const uuid = userData?.subscription?.uuid;
+  if (!uuid) return;
+  window.location.href = 'happ://add/' + encodeURIComponent(`https://vpnpushka.ru/sub/${uuid}`);
 }
 
 function switchGTab(tab, btn) {
