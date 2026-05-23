@@ -307,7 +307,7 @@ function renderAll() {
   }
 
   const vlessEl = document.getElementById('vless-section');
-  if (sub.active && userData.vless_link) {
+  if (sub.active) {
     // fill sub URL after innerHTML is set (done via setTimeout below)
     vlessEl.innerHTML = `
       <div class="card">
@@ -330,8 +330,8 @@ function renderAll() {
           </div>
           <div class="gstep">
             <div class="gnum">2</div>
-            <div><div class="gtitle">Импортируйте ключ</div>
-            <div class="gdesc">Нажмите кнопку <b>Happ</b> выше — ключ откроется в приложении автоматически. Или скопируйте ключ и в Happ нажмите «+» → «Из буфера».</div></div>
+            <div><div class="gtitle">Добавьте подписку в Happ</div>
+            <div class="gdesc">Нажмите кнопку <b>Открыть в Happ</b> выше — подписка добавится автоматически. Или скопируйте ссылку и в Happ нажмите «+» → «Из буфера».</div></div>
           </div>
           <div class="gstep">
             <div class="gnum">3</div>
@@ -348,8 +348,8 @@ function renderAll() {
           </div>
           <div class="gstep">
             <div class="gnum">2</div>
-            <div><div class="gtitle">Импортируйте ключ</div>
-            <div class="gdesc">Скопируйте ключ кнопкой выше. В Happ нажмите «+» → «Импорт из буфера обмена».</div></div>
+            <div><div class="gtitle">Добавьте подписку в Happ</div>
+            <div class="gdesc">Нажмите кнопку <b>Открыть в Happ</b> выше — подписка добавится автоматически. Или скопируйте ссылку и в Happ нажмите «+» → «Из буфера».</div></div>
           </div>
           <div class="gstep">
             <div class="gnum">3</div>
